@@ -6,17 +6,25 @@ class MarsRover {
     private $x;
     private $y;
     private $orientation;
-    private $scents = [];
+    private static $scents = [];
     private $isLost = false;
-	private static $rightTurns = ['N' => 'E', 'E' => 'S', 'S' => 'W', 'W' => 'N'];
-    private static $leftTurns = ['N' => 'W', 'W' => 'S', 'S' => 'E', 'E' => 'N'];
+    private const MAX_COORDINATE = 50;
+    private const MAX_INSTRUCTIONS = 100;
 
 	public function __construct($gridWidth, $gridHeight) {
-		$this->gridWidth = $gridWidth;
-		$this->gridHeight = $gridHeight;
+		$this->gridWidth = $gridWidth+1;
+		$this->gridHeight = $gridHeight+1;
+		if ($gridWidth > self::MAX_COORDINATE || $gridHeight > self::MAX_COORDINATE) {
+            throw new InvalidArgumentException("Grid coordinates must not exceed " . self::MAX_COORDINATE);
+        }
 	}
 
 	public function execute(string $startPosition, string $instructions): string {
+
+		if (strlen($instructions) >= self::MAX_INSTRUCTIONS) {
+            throw new InvalidArgumentException("Instruction string must be less than " . self::MAX_INSTRUCTIONS . " characters");
+        }
+
 		[$x, $y, $orientation] = explode(' ', $startPosition);
 
 		// Set Start Positions and Orientation
@@ -52,14 +60,16 @@ class MarsRover {
 	}
 
 	private function moveRover(string $command): void {
+		$leftTurns = ['N' => 'W', 'W' => 'S', 'S' => 'E', 'E' => 'N'];
+		$rightTurns = ['N' => 'E', 'E' => 'S', 'S' => 'W', 'W' => 'N'];
 		// If Left then orientation will turn clockwise so. If orientation is N then it will be W.  if S and move R it will be W. , Forward will stay Forward. X & Y will only update with forward
 		// Can create and array { 'N' => 'W', 'W' => 'S', 'S' => 'E', 'E' => 'N' } 
 		switch ($command) {
             case 'L':
-                $this->orientation = self::$leftTurns[$this->orientation];
+                $this->orientation = $leftTurns[$this->orientation];
                 break;
             case 'R':
-                $this->orientation = self::$rightTurns[$this->orientation];
+                $this->orientation = $rightTurns[$this->orientation];
                 break;
             case 'F':
 				$this->moveForward();
@@ -69,43 +79,45 @@ class MarsRover {
 
 	private function moveForward(): void {
 
-		$newX = 0;
-		$newY = 0;
-
 		// So moving foreward will update the x and y. Each diretion will update a specific axis by 1. so North.. Y +1 and South Y -1. etc.
 		switch ($this->orientation) {
 			case 'N':
-				$newY = $this->y++;
+				$newY = $this->y + 1;
 				$newX = $this->x;
 				break;
 			case 'E':
-				$newX = $this->x++;
+				$newX = $this->x + 1;
 				$newY = $this->y;
 				break;
 			case 'S':
-				$newY = $this->y--;
+				$newY = $this->y - 1;
 				$newX = $this->x;
 				break;
 			case 'W':
-				$newX = $this->x--;
+				$newX = $this->x - 1 ;
 				$newY = $this->y;
 				break;
 		}
 
-		// Check if Rover has fallen and also check for cents Copy Past above. 
-		if ($newX < 0 || $newX > $this->gridWidth || $newY < 0 || $newY > $this->gridHeight) {
+		// Check if Rover has fallen and also check for Scents.
+		if ($newX < 0 || $newX > $this->gridWidth - 1 || $newY < 0 || $newY > $this->gridHeight - 1) {
             // Add the Scents Checks
-			if(!in_array("$this->x,$this->y", $this->scents)) {
-				$this->scents[] = "$this->x,$this->y";
+			if(!in_array("$this->x,$this->y", self::$scents)) {
+				self::$scents[] = "$this->x,$this->y";
 				$this->isLost = true;
 			}
 			return;
         }
 
-		// didnt fall update the new coords. 
+		// didnt fall, update the new coords. 
 		$this->x = $newX;
 		$this->y = $newY;
+
 	}
+
+	public static function resetScents(): void {
+        self::$scents = [];
+    }
 
 }
 
@@ -116,6 +128,7 @@ function processMarsRoverInput(string $input): string {
 
 	// get the grid size and dump first entry from array. The instantiate
 	[$gridWidth, $gridHeight] = array_map('intval', explode(' ', array_shift($lines)));
+	MarsRover::resetScents();
 	$rover = new MarsRover($gridWidth, $gridHeight);
 
 	// Split the rest of the input. 
