@@ -8,7 +8,8 @@ class MarsRover {
     private $orientation;
     private $scents = [];
     private $isLost = false;
-	// We have the initial orientation. When we move we need to update the orientation to a new one. 
+	private static $rightTurns = ['N' => 'E', 'E' => 'S', 'S' => 'W', 'W' => 'N'];
+    private static $leftTurns = ['N' => 'W', 'W' => 'S', 'S' => 'E', 'E' => 'N'];
 
 	public function __construct($gridWidth, $gridHeight) {
 		$this->gridWidth = $gridWidth;
@@ -33,8 +34,38 @@ class MarsRover {
             return "$this->x $this->y $this->orientation LOST";
         }
 
+		//Take the direction and split them into an array.
+		$directions = str_split($instructions);
+
+		// Follow Directions
+		foreach($directions as $direction) {
+			//If rover is lost. stop
+			if ($this->isLost) break;
+
+			// Time to move the Rover
+			// Need a function to check each move. update x and y and change direction
+
+			$this->moveRover($direction);
+		}
+
 		$output = "$this->x $this->y $this->orientation";
         return $this->isLost ? "$output LOST" : $output;
+	}
+
+	private function moveRover(string $command): void {
+		// If Left then orientation will turn clockwise so. If orientation is N then it will be W.  if S and move R it will be W. , Forward will stay Forward. 
+		// Can create and array { 'N' => 'W', 'W' => 'S', 'S' => 'E', 'E' => 'N' } 
+		switch ($command) {
+            case 'L':
+                $this->orientation = self::$leftTurns[$this->orientation];
+                break;
+            case 'R':
+                $this->orientation = self::$rightTurns[$this->orientation];
+                break;
+            case 'F':
+                $this->moveForward();
+                break;
+        }
 	}
 
 }
